@@ -316,7 +316,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd93ee23ea15ec446b856384e4110238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _puyoDB: {fileID: 11400000, guid: ed14e50002d4c6c4ea8cb3ab7fda44f7, type: 2}
+  puyoDB: {fileID: 11400000, guid: ed14e50002d4c6c4ea8cb3ab7fda44f7, type: 2}
   puyoPrefab: {fileID: 1606487349484043108, guid: c084d4c4fab25694d94ff07c15739fbb, type: 3}
   spawnPosition: {fileID: 909331003}
 --- !u!4 &356492589

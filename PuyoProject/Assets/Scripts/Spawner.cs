@@ -6,7 +6,7 @@ using Random = UnityEngine.Random;
 
 public class Spawner : MonoBehaviour
 {
-    [SerializeField] private PuyoDB _puyoDB; 
+    [SerializeField] private PuyoDB puyoDB; 
     [SerializeField] private GameObject puyoPrefab;
     [SerializeField] private Transform spawnPosition;
 
@@ -17,12 +17,13 @@ public class Spawner : MonoBehaviour
 
     public void Spawn()
     {
-        var newPuyo = Instantiate(puyoPrefab, spawnPosition.position, spawnPosition.rotation);
+        var newPuyo = Instantiate(puyoPrefab, spawnPosition.position, spawnPosition.rotation).GetComponent<Puyo>();
         for (int i = 0; i < 2; i++)
         {
-            var index = Random.Range(0, _puyoDB.puyosList.Count);
-            var puyoElement = Instantiate(_puyoDB.puyosList[index].prefab, new Vector3(newPuyo.transform.position.x + i, newPuyo.transform.position.y, newPuyo.transform.position.z), new Quaternion(0,0,180,0), newPuyo.transform);
-            newPuyo.GetComponent<Puyo>().puyoList.Add(puyoElement);
+            var index = Random.Range(0, puyoDB.puyosList.Count);
+            var puyoElement = Instantiate(puyoDB.puyosList[index].prefab, new Vector3(newPuyo.transform.position.x + i, newPuyo.transform.position.y, newPuyo.transform.position.z), new Quaternion(0,0,180,0), newPuyo.transform).GetComponent<PuyoElement>();
+            puyoElement.type = puyoDB.puyosList[index].type;
+            newPuyo.puyoList.Add(puyoElement);
         }
     }
 }

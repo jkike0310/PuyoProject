@@ -16,9 +16,26 @@ public class PuyoInput : MonoBehaviour
 
     private void Update()
     {
-        vertical = Input.GetAxisRaw("Vertical");
-        horizontal = Input.GetAxisRaw("Horizontal");
+        MovementInput();
+        RotationInput();
+    }
 
+    private void MovementInput()
+    {
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+            vertical = -1;
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+            horizontal = -1;
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+            horizontal = 1;
+        if (Input.GetKeyUp(KeyCode.LeftArrow) || Input.GetKeyUp(KeyCode.RightArrow))
+            horizontal = 0;
+        if (Input.GetKeyUp(KeyCode.DownArrow))
+            vertical = 0;
+    }
+
+    private void RotationInput()
+    {
         if (Input.GetKeyDown(rotateLeftKey))
             OnRotateLeft();
 

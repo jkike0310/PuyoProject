@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class Puyo : MonoBehaviour
 {
@@ -12,10 +13,10 @@ public class Puyo : MonoBehaviour
     private const float movementDelay = 0.05f;
     private float count;
     private float countMov;
-    public List<GameObject> puyoList = new List<GameObject>();
+    public List<PuyoElement> puyoList = new List<PuyoElement>();
     private bool canMove { get; set; }
-    public event Action<Vector3> OnClearOldPosition = delegate {  };
-    public event Action<Vector3, int> OnSetNewPosition = delegate {  };
+    public UnityEvent<Vector3> OnClearOldPosition;
+    public UnityEvent<Vector3, int, Transform> OnSetNewPosition;
     private GameEngine _gameEngine;
 
     private void Awake()
@@ -30,30 +31,44 @@ public class Puyo : MonoBehaviour
 
     void Update()
     {
-        Gravity();
+        
         if (canMove)
         {
+            Gravity();
             Movement();
         }
     }
 
+    public void DisableMovement()
+    {
+        canMove = false;
+    }
+
     private void Movement()
     {
-       
-        if (!(_puyoInput.vertical <= 0) ) return;
+        if (!(_puyoInput.vertical <= 0) || _puyoInput.horizontal == 0 ) return;
         if (countMov > movementDelay)
         {
-            var movementAmount = new Vector3(Mathf.Round(_puyoInput.horizontal), Mathf.Round(_puyoInput.vertical), 0);
-            if( puyoList[0].transform.position.x + movementAmount.x <0 || puyoList[1].transform.position.x + movementAmount.x<0
-                || puyoList[0].transform.position.x + movementAmount.x> _gameEngine.GetMatrix().GetNumberColumns()-1 || puyoList[1].transform.position.x + movementAmount.x > _gameEngine.GetMatrix().GetNumberColumns()-1
-                || puyoList[0].transform.position.y + movementAmount.y <0 || puyoList[1].transform.position.y + movementAmount.y<0)
-                return;
-            OnClearOldPosition(puyoList[0].transform.position);
-            OnClearOldPosition(puyoList[1].transform.position);
+            var movementAmount = new Vector3(Mathf.RoundToInt(_puyoInput.horizontal), Mathf.RoundToInt(_puyoInput.vertical), 0);
+            foreach (var puyo in puyoList)
+            {
+                if (!_gameEngine.CheckBorders(puyo.transform.position+movementAmount))
+                {
+                   movementAmount = Vector3.zero;
+                   if (!_gameEngine.VerifySpaceAvailable(puyo.transform.position + movementAmount))
+                   {
+                       DropPuyos();
+                       return;
+                   }
+                }
+                else
+                {
+                    OnClearOldPosition.Invoke(puyo.transform.position);
+                }
+            }
             transform.position += movementAmount;
-            OnSetNewPosition(puyoList[0].transform.position, type);
-            OnSetNewPosition(puyoList[1].transform.position, type);
-            Debug.Log(puyoList[1].transform.position.x + "    " + puyoList[1].transform.position.y);
+            OnSetNewPosition.Invoke(puyoList[0].transform.position, (int)puyoList[0].GetComponent<PuyoElement>().type, puyoList[0].transform);
+            OnSetNewPosition.Invoke(puyoList[1].transform.position, (int)puyoList[1].GetComponent<PuyoElement>().type, puyoList[0].transform);
             countMov = 0;
         }
         else
@@ -63,23 +78,46 @@ public class Puyo : MonoBehaviour
         
     }
 
+
     private void Gravity()
     {
         if (count > gravityDelay)
         {
-            if(puyoList[0].transform.position.y + Vector3.down.y<0 || puyoList[1].transform.position.y + Vector3.down.y<0)
-                return;
-            OnClearOldPosition(puyoList[0].transform.position);
-            OnClearOldPosition(puyoList[1].transform.position);
+            foreach (var puyo in puyoList)
+            {
+                if (!_gameEngine.CheckBorders(puyo.transform.position + Vector3.down) || !_gameEngine.VerifySpaceAvailable(puyo.transform.position + Vector3.down))
+                {
+                    DropPuyos();
+                    return;
+                }
+                else
+                {
+                    OnClearOldPosition.Invoke(puyo.transform.position);
+                }
+            }
             transform.position += Vector3.down;
-            OnSetNewPosition(puyoList[0].transform.position, type);
-            OnSetNewPosition(puyoList[1].transform.position, type);
+            foreach (var puyo in puyoList)
+            {
+                OnSetNewPosition.Invoke(puyo.transform.position, (int)puyo.type, puyo.transform);
+            }
             count = 0;
         }
         else
         {
             count += Time.deltaTime;
         }
+    }
+    
+    private void DropPuyos()
+    {
+        foreach (var puyo in puyoList)
+        {
+            puyo.Fall();
+        }
+        canMove = false;
+        _puyoInput.OnRotateLeft -= RotateLeft;
+        _puyoInput.OnRotateRight -= RotateRight;
+        _gameEngine.GetSpawner().Spawn();
     }
 
     private void RotateLeft()
@@ -96,8 +134,8 @@ public class Puyo : MonoBehaviour
 
     void SmoothRotation(Quaternion start, Quaternion end, float dur, bool isAdding)
     {
-        OnClearOldPosition(puyoList[0].transform.position);
-        OnClearOldPosition(puyoList[1].transform.position);
+        OnClearOldPosition.Invoke(puyoList[0].transform.position);
+        OnClearOldPosition.Invoke(puyoList[1].transform.position);
         float t = 0f;
         while(t < dur)
         {
@@ -115,8 +153,7 @@ public class Puyo : MonoBehaviour
             t += Time.deltaTime;
         }
         transform.rotation = end;
-        OnSetNewPosition(puyoList[0].transform.position, type);
-        OnSetNewPosition(puyoList[1].transform.position, type);
-        Debug.Log(puyoList[1].transform.position.x + "    " + puyoList[1].transform.position.y);
+        OnSetNewPosition.Invoke(puyoList[0].transform.position, (int)puyoList[0].type, puyoList[0].transform);
+        OnSetNewPosition.Invoke(puyoList[1].transform.position, (int)puyoList[1].type, puyoList[1].transform);
     }
 }
